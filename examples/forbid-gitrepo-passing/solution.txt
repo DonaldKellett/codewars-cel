@@ -1,0 +1,1 @@
+!has(object.spec.volumes) || !object.spec.volumes.exists(v, has(v.gitRepo))
