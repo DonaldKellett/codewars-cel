@@ -1,0 +1,26 @@
+#!/bin/bash
+set -eu
+
+if [ -z "${CONTAINER_ENGINE:+x}" ]; then
+  CONTAINER_ENGINE=docker
+fi
+
+if [ -z "${IMAGE_TAG:+x}" ]; then
+  IMAGE_TAG=docker.io/library/golang:1.23.4-alpine
+fi
+
+W=/workspace
+
+FILES="solution.txt cel_test.go"
+
+# Create container
+C=$($CONTAINER_ENGINE container create --rm -w $W $IMAGE_TAG sh -c "go mod download && go test ./...")
+
+# Copy files from the current directory
+# example/solution.txt
+# example/cel_test.go
+$CONTAINER_ENGINE container cp workspace/. $C:$W
+$CONTAINER_ENGINE container cp examples/${1:-forbid-gitrepo-passing}/. $C:$W
+
+# Run tests
+$CONTAINER_ENGINE container start --attach $C
