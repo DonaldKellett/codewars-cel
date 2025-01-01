@@ -1,29 +1,18 @@
-package main
+package cel_test
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/undistro/cel-playground/eval"
-	"io/ioutil"
-	"testing"
 )
 
-type CelTestSuite struct {
-	suite.Suite
-	prog []byte
-}
+// The user solution is available as userSolution
+// var userSolution []byte
 
-func (suite *CelTestSuite) SetupTest() {
-	prog, err := ioutil.ReadFile("solution.txt")
-	if err != nil {
-		require.Failf(suite.T(), "Failed to read solution file: %s", err.Error())
-	}
-	suite.prog = prog
-}
-
-func (suite *CelTestSuite) TestPodSpecWithoutVolumes() {
-	podSpecWithoutVolumes := `
+var _ = Describe("Forbid gitRepo volumes", func() {
+	It("should work for a Pod spec without volumes", func() {
+		podSpecWithoutVolumes := `
 object:
   spec:
     containers:
@@ -36,16 +25,15 @@ object:
     dnsPolicy: ClusterFirst
     restartPolicy: Always
 `
-	response, err := eval.CelEval(suite.prog, []byte(podSpecWithoutVolumes))
-	require.Nil(suite.T(), err)
-	var actual eval.EvalResponse
-	err = json.Unmarshal([]byte(response), &actual)
-	require.Nil(suite.T(), err)
-	require.True(suite.T(), actual.Result.(bool))
-}
+		response, err := eval.CelEval(userSolution, []byte(podSpecWithoutVolumes))
+		Expect(err).NotTo(HaveOccurred())
+		var actual eval.EvalResponse
+		Expect(json.Unmarshal([]byte(response), &actual)).To(Succeed())
+		Expect(actual.Result.(bool)).To(BeTrue())
+	})
 
-func (suite *CelTestSuite) TestPodSpecWithNonGitRepoVolumesOnly() {
-	podSpecWithNonGitRepoVolumesOnly := `
+	It("should work for a Pod spec with only non-gitRepo volumes", func() {
+		podSpecWithNonGitRepoVolumesOnly := `
 object:
   spec:
     containers:
@@ -65,16 +53,15 @@ object:
         persistentVolumeClaim:
           claimName: busybox
 `
-	response, err := eval.CelEval(suite.prog, []byte(podSpecWithNonGitRepoVolumesOnly))
-	require.Nil(suite.T(), err)
-	var actual eval.EvalResponse
-	err = json.Unmarshal([]byte(response), &actual)
-	require.Nil(suite.T(), err)
-	require.True(suite.T(), actual.Result.(bool))
-}
+		response, err := eval.CelEval(userSolution, []byte(podSpecWithNonGitRepoVolumesOnly))
+		Expect(err).NotTo(HaveOccurred())
+		var actual eval.EvalResponse
+		Expect(json.Unmarshal([]byte(response), &actual)).To(Succeed())
+		Expect(actual.Result.(bool)).To(BeTrue())
+	})
 
-func (suite *CelTestSuite) TestPodSpecWithGitRepoVolumesOnly() {
-	podSpecWithGitRepoVolumesOnly := `
+	It("should work for a Pod spec with gitRepo volumes only", func() {
+		podSpecWithGitRepoVolumesOnly := `
 object:
   spec:
     containers:
@@ -95,16 +82,15 @@ object:
           repository: "git@github.com:kubernetes/kubernetes.git"
           revision: "9fc9ddc7bceca86e805f674caff7d7acf31fad6c"
 `
-	response, err := eval.CelEval(suite.prog, []byte(podSpecWithGitRepoVolumesOnly))
-	require.Nil(suite.T(), err)
-	var actual eval.EvalResponse
-	err = json.Unmarshal([]byte(response), &actual)
-	require.Nil(suite.T(), err)
-	require.False(suite.T(), actual.Result.(bool))
-}
+		response, err := eval.CelEval(userSolution, []byte(podSpecWithGitRepoVolumesOnly))
+		Expect(err).NotTo(HaveOccurred())
+		var actual eval.EvalResponse
+		Expect(json.Unmarshal([]byte(response), &actual)).To(Succeed())
+		Expect(actual.Result.(bool)).To(BeFalse())
+	})
 
-func (suite *CelTestSuite) TestPodSpecWithGitRepoVolumes() {
-	podSpecWithGitRepoVolumes := `
+	It("should work for a Pod spec with gitRepo volumes and non-gitRepo volumes alike", func() {
+		podSpecWithGitRepoVolumes := `
 object:
   spec:
     containers:
@@ -130,14 +116,10 @@ object:
           repository: "git@github.com:kubernetes/kubernetes.git"
           revision: "9fc9ddc7bceca86e805f674caff7d7acf31fad6c"
 `
-	response, err := eval.CelEval(suite.prog, []byte(podSpecWithGitRepoVolumes))
-	require.Nil(suite.T(), err)
-	var actual eval.EvalResponse
-	err = json.Unmarshal([]byte(response), &actual)
-	require.Nil(suite.T(), err)
-	require.False(suite.T(), actual.Result.(bool))
-}
-
-func TestForbidGitRepo(t *testing.T) {
-	suite.Run(t, new(CelTestSuite))
-}
+		response, err := eval.CelEval(userSolution, []byte(podSpecWithGitRepoVolumes))
+		Expect(err).NotTo(HaveOccurred())
+		var actual eval.EvalResponse
+		Expect(json.Unmarshal([]byte(response), &actual)).To(Succeed())
+		Expect(actual.Result.(bool)).To(BeFalse())
+	})
+})
