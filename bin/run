@@ -14,7 +14,7 @@ W=/workspace
 FILES="solution.txt cel_test.go"
 
 # Create container
-C=$($CONTAINER_ENGINE container create --rm -w $W $IMAGE_TAG sh -c "go mod download && go test ./...")
+C=$($CONTAINER_ENGINE container create --rm -w $W $IMAGE_TAG sh -c "go get github.com/onsi/ginkgo/v2/ginkgo && go install github.com/onsi/ginkgo/v2/ginkgo && go mod download && ginkgo")
 
 # Copy files from the current directory
 # example/solution.txt
